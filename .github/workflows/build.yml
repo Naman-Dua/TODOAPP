@@ -1,6 +1,7 @@
-name: Build Executables for To-Do App
+name: Build Windows EXE
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -8,83 +9,31 @@ on:
     branches:
       - main
 
-
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  build-windows:
+    runs-on: windows-latest
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-    - name: Create Virtual Environment
-      run: |
-        if [ "${{ runner.os }}" == "Windows" ]; then
-          python -m venv venv
-        else
-          python3 -m venv venv
-        fi
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install PyQt5 pyinstaller
 
-    - name: Upgrade pip and Install Dependencies
-      run: |
-        if [ "${{ runner.os }}" == "Windows" ]; then
-          venv\Scripts\activate.bat
-        else
-          source venv/bin/activate
-        fi
-        python -m pip install --upgrade pip
-        python -m pip install pyinstaller
+      - name: Build desktop executable
+        run: |
+          pyinstaller --noconfirm --windowed --onefile --name TaskHorizon todo.py
 
-    - name: Download RAR parts
-      run: |
-        mkdir -p dist
-        curl -L -o dist/dist.part1.rar https://github.com/namant43fg/TODOAPP/raw/main/dist.part1.rar
-        curl -L -o dist/dist.part2.rar https://github.com/namant43fg/TODOAPP/raw/main/dist.part2.rar
-        curl -L -o dist/dist.part3.rar https://github.com/namant43fg/TODOAPP/raw/main/dist.part3.rar
-
-    - name: Install unrar (Linux/macOS)
-      if: runner.os != 'Windows'
-      run: |
-        if [[ "$(uname)" == "Darwin" ]]; then
-          brew install unrar || true
-        else
-          sudo apt-get update
-          sudo apt-get install -y unrar
-        fi
-
-    - name: Extract RAR files
-      run: |
-        cd dist
-        unrar x dist.part1.rar
-
-    - name: Verify extracted file
-      run: |
-        ls -l dist
-        file dist/todo.py
-
-    - name: Build executable for ${{ matrix.os }}
-      run: |
-        if [ "${{ runner.os }}" == "Windows" ]; then
-          venv\Scripts\activate.bat
-        else
-          source venv/bin/activate
-        fi
-        pyinstaller --onefile --distpath dist/${{ matrix.os }} dist/todo.py
-
-    - name: Upload executables
-      uses: actions/upload-artifact@v3
-      with:
-        name: todo-${{ matrix.os }}
-        path: |
-          dist/linux/*
-          dist/macos/*
-          dist/windows/*
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskHorizon-windows
+          path: dist/TaskHorizon.exe
 
