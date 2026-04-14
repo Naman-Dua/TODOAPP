@@ -23,7 +23,12 @@ from PyQt5.QtWidgets import (
 )
 
 
-TASKS_FILE = Path(__file__).resolve().parent / "tasks.json"
+if getattr(sys, "frozen", False):
+    APP_DIR = Path(sys.executable).resolve().parent
+else:
+    APP_DIR = Path(__file__).resolve().parent
+
+TASKS_FILE = APP_DIR / "tasks.json"
 
 
 class TodoApp(QWidget):
